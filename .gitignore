@@ -1,0 +1,29 @@
+.vs/
+
+# .NET / Visual Studio
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pdb
+
+# Logs
+*.log
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+
+# Local env files
+.env*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Docker local volumes (if you ever map to a folder)
+**/sql_data/
