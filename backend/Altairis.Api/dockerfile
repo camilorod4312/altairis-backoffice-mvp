@@ -1,11 +1,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY Altairis.Api.csproj ./
-RUN dotnet restore
+COPY Altairis.sln ./
+COPY Altairis.Api/Altairis.Api.csproj Altairis.Api/
+COPY Altairis.Application/Altairis.Application.csproj Altairis.Application/
+COPY Altairis.Domain/Altairis.Domain.csproj Altairis.Domain/
+COPY Altairis.Infrastructure/Altairis.Infrastructure.csproj Altairis.Infrastructure/
+RUN dotnet restore Altairis.Api/Altairis.Api.csproj
 
 COPY . ./
-RUN dotnet publish -c Release -o /app/out
+RUN dotnet publish Altairis.Api/Altairis.Api.csproj -c Release -o /app/out
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
