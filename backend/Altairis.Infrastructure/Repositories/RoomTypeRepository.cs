@@ -15,12 +15,12 @@ internal sealed class RoomTypeRepository : IRoomTypeRepository
         _db = db;
     }
 
-    public async Task<(int total, List<RoomTypeListItemDto> items)> ListAsync(int? hotelId, string? query, int page, int pageSize, CancellationToken ct)
+    public async Task<(int total, List<RoomTypeListItemDto> items)> ListAsync(IReadOnlyList<int>? hotelIds, string? query, int page, int pageSize, CancellationToken ct)
     {
         var q = _db.RoomTypes.AsNoTracking();
-        if (hotelId is not null)
+        if (hotelIds is not null)
         {
-            q = q.Where(rt => rt.HotelId == hotelId.Value);
+            q = q.Where(rt => hotelIds.Contains(rt.HotelId));
         }
 
         if (!string.IsNullOrWhiteSpace(query))

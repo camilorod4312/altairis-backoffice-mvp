@@ -3,6 +3,7 @@ using Altairis.Application.Repositories;
 using Altairis.Domain.Entities;
 using Altairis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace Altairis.Infrastructure.Repositories;
 
@@ -15,9 +16,13 @@ internal sealed class HotelRepository : IHotelRepository
         _db = db;
     }
 
-    public async Task<(int total, List<HotelListItemDto> items)> ListAsync(string? query, int page, int pageSize, CancellationToken ct)
+    public async Task<(int total, List<HotelListItemDto> items)> ListAsync(IReadOnlyList<int>? hotelIds, string? query, int page, int pageSize, CancellationToken ct)
     {
         var q = _db.Hotels.AsNoTracking();
+        if (hotelIds is not null)
+        {
+            q = q.Where(h => hotelIds.Contains(h.Id));
+        }
         if (!string.IsNullOrWhiteSpace(query))
         {
             var term = query.Trim();

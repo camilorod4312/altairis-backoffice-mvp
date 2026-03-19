@@ -16,7 +16,7 @@ internal sealed class ReservationRepository : IReservationRepository
     }
 
     public async Task<(int total, List<ReservationListItemDto> items)> ListAsync(
-        int? hotelId,
+        IReadOnlyList<int>? hotelIds,
         string? query,
         DateOnly? from,
         DateOnly? to,
@@ -26,9 +26,9 @@ internal sealed class ReservationRepository : IReservationRepository
     {
         var q = _db.Reservations.AsNoTracking();
 
-        if (hotelId is not null)
+        if (hotelIds is not null)
         {
-            q = q.Where(r => r.HotelId == hotelId.Value);
+            q = q.Where(r => hotelIds.Contains(r.HotelId));
         }
 
         if (!string.IsNullOrWhiteSpace(query))
@@ -39,7 +39,7 @@ internal sealed class ReservationRepository : IReservationRepository
 
         if (from is not null)
         {
-            q = q.Where(r => r.CheckIn >= from.Value);
+            q = q.Where(r => r.CheckOut >= from.Value);
         }
 
         if (to is not null)

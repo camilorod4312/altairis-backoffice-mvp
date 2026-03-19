@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Altairis.Api.Auth;
+using Altairis.Domain.Entities;
 using Altairis.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -50,19 +51,29 @@ public sealed class AuthController : ControllerBase
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
+            new(ClaimTypes.Role, user.Role.ToString()),
         };
 
-        if (user.HotelId is not null)
+        // Tenant scope is derived from UserHotelAssignments.
+        if (user.Role is UserRole.HotelOwner or UserRole.Ops)
         {
-            claims.Add(new Claim("hotelId", user.HotelId.Value.ToString()));
+            var allowedHotelIds = await _db.UserHotelAssignments
+                .AsNoTracking()
+                .Where(a => a.UserId == user.Id)
+                .Select(a => a.HotelId)
+                .ToListAsync(ct);
+
+            if (allowedHotelIds.Count > 0)
+            {
+                claims.Add(new Claim("hotelIds", string.Join(',', allowedHotelIds)));
+            }
         }
 
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
+            expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                 SecurityAlgorithms.HmacSha256));
@@ -71,7 +82,14 @@ public sealed class AuthController : ControllerBase
         return Ok(new
         {
             accessToken = tokenString,
-            user = new { user.Id, user.Email, user.Role, user.HotelId }
+            // Keep backward compatibility with the frontend shape; hotelId is optional.
+            user = new
+            {
+                user.Id,
+                user.Email,
+                role = user.Role.ToString(),
+                hotelId = user.HotelId
+            }
         });
     }
 }

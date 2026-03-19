@@ -3,14 +3,21 @@ using Altairis.Api.Data;
 using Altairis.Infrastructure;
 using Altairis.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -62,7 +69,21 @@ app.UseAuthorization();
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AltairisDbContext>();
-    await db.Database.MigrateAsync(CancellationToken.None);
+
+    const int maxRetries = 10;
+    for (var attempt = 1; attempt <= maxRetries; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync(CancellationToken.None);
+            break;
+        }
+        catch (SqlException) when (attempt < maxRetries)
+        {
+            await Task.Delay(3000);
+        }
+    }
+
     await DbInitializer.SeedAsync(db, CancellationToken.None);
 }
 

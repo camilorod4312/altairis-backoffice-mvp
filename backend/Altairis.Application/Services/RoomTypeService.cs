@@ -15,7 +15,7 @@ public sealed class RoomTypeService : IRoomTypeService
         _repo = repo;
     }
 
-    public async Task<PagedResult<RoomTypeListItemDto>> GetAsync(int? hotelId, string? query, int page, int pageSize, CancellationToken ct)
+    public async Task<PagedResult<RoomTypeListItemDto>> GetAsync(IReadOnlyList<int>? hotelIds, string? query, int page, int pageSize, CancellationToken ct)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize switch
@@ -25,7 +25,7 @@ public sealed class RoomTypeService : IRoomTypeService
             _ => pageSize
         };
 
-        var (total, items) = await _repo.ListAsync(hotelId, query, page, pageSize, ct);
+        var (total, items) = await _repo.ListAsync(hotelIds, query, page, pageSize, ct);
         return new PagedResult<RoomTypeListItemDto>(page, pageSize, total, items);
     }
 

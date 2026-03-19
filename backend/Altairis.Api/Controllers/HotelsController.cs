@@ -1,8 +1,11 @@
 using Altairis.Application.Common;
 using Altairis.Application.Dtos.Hotels;
 using Altairis.Application.IServices;
+using Altairis.Api.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
 
 namespace Altairis.Api.Controllers;
 
@@ -18,19 +21,25 @@ public sealed class HotelsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin,HotelOwner,Ops")]
     public async Task<ActionResult<PagedResult<HotelListItemDto>>> List(
         [FromQuery(Name = "q")] string? query,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
         CancellationToken ct = default)
     {
-        var result = await _service.GetAsync(query, page, pageSize, ct);
+        var allowedHotelIds = HotelScope.GetAllowedHotelIds(User);
+        var result = await _service.GetAsync(allowedHotelIds, query, page, pageSize, ct);
         return Ok(result);
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin,HotelOwner,Ops")]
     public async Task<ActionResult<HotelDto>> GetById([FromRoute] int id, CancellationToken ct = default)
     {
+        var forbid = HotelScope.EnforceTenantHotel(this, id);
+        if (forbid is not null) return Forbid();
+
         var dto = await _service.GetByIdAsync(id, ct);
         if (dto is null) return NotFound();
         return Ok(dto);

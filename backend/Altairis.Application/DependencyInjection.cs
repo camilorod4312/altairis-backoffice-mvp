@@ -12,6 +12,8 @@ public static class DependencyInjection
         services.AddScoped<IRoomTypeService, RoomTypeService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IReservationService, ReservationService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         return services;
     }
 }

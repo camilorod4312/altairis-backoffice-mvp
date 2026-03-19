@@ -14,5 +14,8 @@ public sealed class Hotel
     public List<RoomType> RoomTypes { get; set; } = [];
     public List<InventoryEntry> InventoryEntries { get; set; } = [];
     public List<Reservation> Reservations { get; set; } = [];
+
+    // Used for HotelOwner multi-hotel assignments (and Ops single assignment in MVP).
+    public List<UserHotelAssignment> UserHotelAssignments { get; set; } = [];
 }
 

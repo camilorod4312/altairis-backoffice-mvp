@@ -6,5 +6,6 @@ public sealed record CreateHotelDto(
     string Country,
     string? AddressLine1,
     string? PostalCode,
-    bool? IsActive);
+    bool? IsActive,
+    IReadOnlyList<int>? OwnerUserIds);
 

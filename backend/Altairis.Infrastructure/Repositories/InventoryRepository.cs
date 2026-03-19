@@ -3,6 +3,7 @@ using Altairis.Application.Repositories;
 using Altairis.Domain.Entities;
 using Altairis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace Altairis.Infrastructure.Repositories;
 
@@ -16,7 +17,7 @@ internal sealed class InventoryRepository : IInventoryRepository
     }
 
     public async Task<(int total, List<InventoryEntryDto> items)> ListAsync(
-        int? hotelId,
+        IReadOnlyList<int>? hotelIds,
         int? roomTypeId,
         DateOnly? from,
         DateOnly? to,
@@ -26,9 +27,9 @@ internal sealed class InventoryRepository : IInventoryRepository
     {
         var q = _db.InventoryEntries.AsNoTracking();
 
-        if (hotelId is not null)
+        if (hotelIds is not null)
         {
-            q = q.Where(e => e.HotelId == hotelId.Value);
+            q = q.Where(e => hotelIds.Contains(e.HotelId));
         }
 
         if (roomTypeId is not null)

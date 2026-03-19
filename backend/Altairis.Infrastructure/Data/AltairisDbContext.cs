@@ -14,6 +14,7 @@ public sealed class AltairisDbContext : DbContext
     public DbSet<InventoryEntry> InventoryEntries => Set<InventoryEntry>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserHotelAssignment> UserHotelAssignments => Set<UserHotelAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,7 @@ public sealed class AltairisDbContext : DbContext
         inventory.Property(x => x.TotalUnits).IsRequired();
         inventory.Property(x => x.AvailableUnits).IsRequired();
         inventory.HasIndex(x => new { x.HotelId, x.RoomTypeId, x.Date }).IsUnique();
+        inventory.HasIndex(x => new { x.HotelId, x.Date });
         inventory.HasOne(x => x.Hotel).WithMany(x => x.InventoryEntries).HasForeignKey(x => x.HotelId);
         inventory.HasOne(x => x.RoomType)
             .WithMany(x => x.InventoryEntries)
@@ -58,6 +60,8 @@ public sealed class AltairisDbContext : DbContext
         reservation.Property(x => x.CheckOut).IsRequired();
         reservation.HasIndex(x => x.Reference).IsUnique();
         reservation.HasIndex(x => new { x.HotelId, x.CheckIn });
+        reservation.HasIndex(x => new { x.HotelId, x.CheckIn, x.CheckOut });
+        reservation.HasIndex(x => x.CreatedUtc);
         reservation.HasOne(x => x.Hotel).WithMany(x => x.Reservations).HasForeignKey(x => x.HotelId);
         reservation.HasOne(x => x.RoomType)
             .WithMany(x => x.Reservations)
@@ -68,11 +72,25 @@ public sealed class AltairisDbContext : DbContext
         user.HasKey(x => x.Id);
         user.Property(x => x.Email).HasMaxLength(240).IsRequired();
         user.Property(x => x.PasswordHash).HasMaxLength(200).IsRequired();
-        user.Property(x => x.Role).HasMaxLength(40).IsRequired();
+        user.Property(x => x.Role)
+            .HasConversion<string>()
+            .HasMaxLength(40)
+            .IsRequired();
         user.Property(x => x.IsActive).HasDefaultValue(true);
         user.HasIndex(x => x.Email).IsUnique();
         user.HasOne(x => x.Hotel)
             .WithMany()
+            .HasForeignKey(x => x.HotelId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        var owner = modelBuilder.Entity<UserHotelAssignment>();
+        owner.HasKey(x => new { x.UserId, x.HotelId });
+        owner.HasOne(x => x.User)
+            .WithMany(u => u.UserHotelAssignments)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.NoAction);
+        owner.HasOne(x => x.Hotel)
+            .WithMany(h => h.UserHotelAssignments)
             .HasForeignKey(x => x.HotelId)
             .OnDelete(DeleteBehavior.NoAction);
     }

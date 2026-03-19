@@ -3,20 +3,23 @@ using Altairis.Application.Dtos.Inventory;
 using Altairis.Application.IServices;
 using Altairis.Application.Repositories;
 using Altairis.Domain.Entities;
+using System.Collections.Generic;
 
 namespace Altairis.Application.Services;
 
 public sealed class InventoryService : IInventoryService
 {
     private readonly IInventoryRepository _repo;
+    private readonly IRoomTypeRepository _roomTypeRepo;
 
-    public InventoryService(IInventoryRepository repo)
+    public InventoryService(IInventoryRepository repo, IRoomTypeRepository roomTypeRepo)
     {
         _repo = repo;
+        _roomTypeRepo = roomTypeRepo;
     }
 
     public async Task<PagedResult<InventoryEntryDto>> GetAsync(
-        int? hotelId,
+        IReadOnlyList<int>? hotelIds,
         int? roomTypeId,
         DateOnly? from,
         DateOnly? to,
@@ -32,7 +35,7 @@ public sealed class InventoryService : IInventoryService
             _ => pageSize
         };
 
-        var (total, items) = await _repo.ListAsync(hotelId, roomTypeId, from, to, page, pageSize, ct);
+        var (total, items) = await _repo.ListAsync(hotelIds, roomTypeId, from, to, page, pageSize, ct);
         return new PagedResult<InventoryEntryDto>(page, pageSize, total, items);
     }
 
@@ -49,6 +52,17 @@ public sealed class InventoryService : IInventoryService
         if (request.AvailableUnits > request.TotalUnits)
         {
             throw new ArgumentException("AvailableUnits cannot be greater than TotalUnits.");
+        }
+
+        var roomType = await _roomTypeRepo.GetByIdAsync(request.RoomTypeId, ct);
+        if (roomType is null)
+        {
+            throw new ArgumentException("Room type not found.");
+        }
+
+        if (roomType.HotelId != request.HotelId)
+        {
+            throw new ArgumentException("Room type does not belong to the provided hotel.");
         }
 
         var existing = await _repo.FindAsync(request.HotelId, request.RoomTypeId, request.Date, ct);

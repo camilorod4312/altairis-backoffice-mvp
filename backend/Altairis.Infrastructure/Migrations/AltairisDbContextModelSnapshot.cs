@@ -97,6 +97,8 @@ namespace Altairis.Infrastructure.Migrations
 
                     b.HasIndex("RoomTypeId");
 
+                    b.HasIndex("HotelId", "Date");
+
                     b.HasIndex("HotelId", "RoomTypeId", "Date")
                         .IsUnique();
 
@@ -150,12 +152,16 @@ namespace Altairis.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedUtc");
+
                     b.HasIndex("Reference")
                         .IsUnique();
 
                     b.HasIndex("RoomTypeId");
 
                     b.HasIndex("HotelId", "CheckIn");
+
+                    b.HasIndex("HotelId", "CheckIn", "CheckOut");
 
                     b.ToTable("Reservations");
                 });
@@ -236,6 +242,21 @@ namespace Altairis.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Altairis.Domain.Entities.UserHotelAssignment", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HotelId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "HotelId");
+
+                    b.HasIndex("HotelId");
+
+                    b.ToTable("UserHotelAssignments");
+                });
+
             modelBuilder.Entity("Altairis.Domain.Entities.InventoryEntry", b =>
                 {
                     b.HasOne("Altairis.Domain.Entities.Hotel", "Hotel")
@@ -295,6 +316,25 @@ namespace Altairis.Infrastructure.Migrations
                     b.Navigation("Hotel");
                 });
 
+            modelBuilder.Entity("Altairis.Domain.Entities.UserHotelAssignment", b =>
+                {
+                    b.HasOne("Altairis.Domain.Entities.Hotel", "Hotel")
+                        .WithMany("UserHotelAssignments")
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Altairis.Domain.Entities.User", "User")
+                        .WithMany("UserHotelAssignments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Hotel");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Altairis.Domain.Entities.Hotel", b =>
                 {
                     b.Navigation("InventoryEntries");
@@ -302,6 +342,8 @@ namespace Altairis.Infrastructure.Migrations
                     b.Navigation("Reservations");
 
                     b.Navigation("RoomTypes");
+
+                    b.Navigation("UserHotelAssignments");
                 });
 
             modelBuilder.Entity("Altairis.Domain.Entities.RoomType", b =>
@@ -309,6 +351,11 @@ namespace Altairis.Infrastructure.Migrations
                     b.Navigation("InventoryEntries");
 
                     b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("Altairis.Domain.Entities.User", b =>
+                {
+                    b.Navigation("UserHotelAssignments");
                 });
 #pragma warning restore 612, 618
         }

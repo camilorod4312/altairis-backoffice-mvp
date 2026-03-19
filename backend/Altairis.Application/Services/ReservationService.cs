@@ -3,20 +3,23 @@ using Altairis.Application.Dtos.Reservations;
 using Altairis.Application.IServices;
 using Altairis.Application.Repositories;
 using Altairis.Domain.Entities;
+using System.Collections.Generic;
 
 namespace Altairis.Application.Services;
 
 public sealed class ReservationService : IReservationService
 {
     private readonly IReservationRepository _repo;
+    private readonly IRoomTypeRepository _roomTypeRepo;
 
-    public ReservationService(IReservationRepository repo)
+    public ReservationService(IReservationRepository repo, IRoomTypeRepository roomTypeRepo)
     {
         _repo = repo;
+        _roomTypeRepo = roomTypeRepo;
     }
 
     public async Task<PagedResult<ReservationListItemDto>> GetAsync(
-        int? hotelId,
+        IReadOnlyList<int>? hotelIds,
         string? query,
         DateOnly? from,
         DateOnly? to,
@@ -32,7 +35,7 @@ public sealed class ReservationService : IReservationService
             _ => pageSize
         };
 
-        var (total, items) = await _repo.ListAsync(hotelId, query, from, to, page, pageSize, ct);
+        var (total, items) = await _repo.ListAsync(hotelIds, query, from, to, page, pageSize, ct);
         return new PagedResult<ReservationListItemDto>(page, pageSize, total, items);
     }
 
@@ -50,6 +53,17 @@ public sealed class ReservationService : IReservationService
         if (request.CheckOut <= request.CheckIn)
         {
             throw new ArgumentException("CheckOut must be after CheckIn.");
+        }
+
+        var roomType = await _roomTypeRepo.GetByIdAsync(request.RoomTypeId, ct);
+        if (roomType is null)
+        {
+            throw new ArgumentException("Room type not found.");
+        }
+
+        if (roomType.HotelId != request.HotelId)
+        {
+            throw new ArgumentException("Room type does not belong to the provided hotel.");
         }
 
         var entity = new Reservation
